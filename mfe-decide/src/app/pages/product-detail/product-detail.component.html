@@ -1,0 +1,53 @@
+@if (store.loading()) {
+  <div class="loading-banner">
+    <p>Cargando producto...</p>
+  </div>
+} @else if (store.error()) {
+  <div class="error-banner">
+    <p>{{ store.error() }}</p>
+    <button (click)="store.clearError()">Reintentar</button>
+  </div>
+} @else if (store.product()) {
+  <section class="product-detail">
+    <div class="product-gallery">
+      <img
+        [src]="store.selectedVariant()?.imageUrl ?? ''"
+        [alt]="store.product()!.name"
+        class="product-image"
+      />
+    </div>
+
+    <div class="product-info">
+      <span class="product-category">{{ store.product()!.category | titlecase }}</span>
+      <h1 class="product-name">{{ store.product()!.name }}</h1>
+      <p class="product-description">{{ store.product()!.description }}</p>
+
+      <div class="product-meta">
+        <p class="product-sku">SKU: <strong>{{ store.selectedVariant()?.sku }}</strong></p>
+        <p class="product-motor">Motor: <strong>{{ store.selectedVariant()?.motor }}</strong></p>
+        <p class="product-color">Color: <strong>{{ store.selectedVariant()?.color }}</strong></p>
+        <p class="product-stock">
+          Stock:
+          <strong [class.out-of-stock]="(store.selectedVariant()?.stock ?? 0) === 0">
+            {{ (store.selectedVariant()?.stock ?? 0) > 0 ? store.selectedVariant()!.stock + ' unidades' : 'Sin stock' }}
+          </strong>
+        </p>
+        <p class="product-price">{{ store.selectedVariant()?.price | currency: 'USD' }}</p>
+      </div>
+
+      <div class="variant-selector">
+        <h2>Selecciona una variante</h2>
+        <div class="variant-options">
+          @for (variant of store.product()!.variants; track variant.sku) {
+            <ts-variant-option
+              [attr.value]="variant.sku"
+              [attr.label]="variant.color + ' / ' + variant.motor"
+              [attr.selected]="store.selectedSku() === variant.sku ? true : null"
+              (click)="onVariantSelect(variant.sku)"
+            ></ts-variant-option>
+          }
+        </div>
+      </div>
+    </div>
+  </section>
+}
