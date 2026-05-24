@@ -1,0 +1,151 @@
+name: 🏗️ Infrastructure Pipeline
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '**/Dockerfile'
+      - '**/nginx.conf'
+      - '.github/workflows/infrastructure.yml'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment'
+        required: true
+        default: 'staging'
+        type: choice
+        options: [staging, production]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_PREFIX: ${{ github.repository_owner }}/tractor-store
+
+jobs:
+  # ─── 1. Validate Dockerfiles ─────────────────────────────────────────────────
+  validate:
+    name: Lint Dockerfiles
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Lint – mfe-explore
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: mfe-explore/Dockerfile
+
+      - name: Lint – mfe-checkout
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: mfe-checkout/Dockerfile
+
+      - name: Lint – mfe-decide
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: mfe-decide/Dockerfile
+
+  # ─── 2. Build & Push Docker Images ──────────────────────────────────────────
+  build-push:
+    name: Build & Push – ${{ matrix.mfe }}
+    runs-on: ubuntu-latest
+    needs: validate
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - mfe: mfe-explore
+            port: 4201
+          - mfe: mfe-checkout
+            port: 4202
+          - mfe: mfe-decide
+            port: 4203
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-${{ matrix.mfe }}
+          tags: |
+            type=ref,event=branch
+            type=sha,prefix=sha-
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+
+      - name: Build & push ${{ matrix.mfe }}
+        uses: docker/build-push-action@v5
+        with:
+          context: ./${{ matrix.mfe }}
+          file: ./${{ matrix.mfe }}/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=${{ matrix.mfe }}
+          cache-to: type=gha,scope=${{ matrix.mfe }},mode=max
+
+  # ─── 3. Smoke Test Deployed Containers ──────────────────────────────────────
+  smoke-test:
+    name: Smoke Test – ${{ matrix.mfe }}
+    runs-on: ubuntu-latest
+    needs: build-push
+    if: github.ref == 'refs/heads/main'
+    permissions:
+      packages: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - mfe: mfe-explore
+            port: 4201
+          - mfe: mfe-checkout
+            port: 4202
+          - mfe: mfe-decide
+            port: 4203
+
+    steps:
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Pull & run ${{ matrix.mfe }}
+        run: |
+          docker run -d \
+            --name ${{ matrix.mfe }}-smoke \
+            -p ${{ matrix.port }}:80 \
+            ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-${{ matrix.mfe }}:latest
+
+      - name: Wait for container to be healthy
+        run: |
+          for i in {1..10}; do
+            if curl --silent --fail http://localhost:${{ matrix.port }}; then
+              echo "✅ ${{ matrix.mfe }} is up"
+              exit 0
+            fi
+            echo "Waiting... ($i/10)"
+            sleep 3
+          done
+          echo "❌ ${{ matrix.mfe }} did not respond in time"
+          docker logs ${{ matrix.mfe }}-smoke
+          exit 1
+
+      - name: Teardown
+        if: always()
+        run: |
+          docker stop ${{ matrix.mfe }}-smoke || true
+          docker rm ${{ matrix.mfe }}-smoke || true

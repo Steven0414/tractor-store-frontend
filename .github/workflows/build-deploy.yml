@@ -1,0 +1,236 @@
+name: 🚀 Build & Deploy Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_PREFIX: ${{ github.repository_owner }}/tractor-store
+  NODE_VERSION: '22'
+
+jobs:
+  # ─── 1. Quality Gate: TypeScript Compilation Check ──────────────────────────
+  quality:
+    name: Quality Gate – ${{ matrix.mfe }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        mfe: [mfe-explore, mfe-checkout, mfe-decide]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: ${{ matrix.mfe }}/package-lock.json
+
+      - name: Install dependencies
+        working-directory: ${{ matrix.mfe }}
+        run: npm ci
+
+      - name: TypeScript compilation check (app)
+        working-directory: ${{ matrix.mfe }}
+        run: npx tsc --noEmit -p tsconfig.app.json
+
+      - name: TypeScript compilation check (specs)
+        working-directory: ${{ matrix.mfe }}
+        run: npx tsc --noEmit -p tsconfig.spec.json
+
+  # ─── 2. Unit Tests with Coverage Enforcement ────────────────────────────────
+  test:
+    name: Tests & Coverage – ${{ matrix.mfe }}
+    runs-on: ubuntu-latest
+    needs: quality
+    strategy:
+      fail-fast: false
+      matrix:
+        mfe: [mfe-explore, mfe-checkout, mfe-decide]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: ${{ matrix.mfe }}/package-lock.json
+
+      - name: Install dependencies
+        working-directory: ${{ matrix.mfe }}
+        run: npm ci
+
+      - name: Run unit tests with coverage
+        working-directory: ${{ matrix.mfe }}
+        run: |
+          npx ng test \
+            --watch=false \
+            --browsers=ChromeHeadlessNoSandbox \
+            --code-coverage
+
+      - name: Verify coverage thresholds
+        working-directory: ${{ matrix.mfe }}
+        run: |
+          SUMMARY_FILE="coverage/${{ matrix.mfe }}/coverage-summary.json"
+          if [ ! -f "$SUMMARY_FILE" ]; then
+            echo "⚠️  coverage-summary.json not found, skipping threshold check"
+            exit 0
+          fi
+          LINES=$(python3 -c "
+          import json, sys
+          d = json.load(open('$SUMMARY_FILE'))
+          print(int(d['total']['lines']['pct']))
+          ")
+          BRANCHES=$(python3 -c "
+          import json
+          d = json.load(open('$SUMMARY_FILE'))
+          print(int(d['total']['branches']['pct']))
+          ")
+          echo "📊 Line coverage:   ${LINES}%"
+          echo "📊 Branch coverage: ${BRANCHES}%"
+          THRESHOLD=70
+          FAILED=0
+          [ "$LINES" -lt "$THRESHOLD" ] && echo "❌ Lines ${LINES}% < ${THRESHOLD}%" && FAILED=1
+          [ "$BRANCHES" -lt "$THRESHOLD" ] && echo "❌ Branches ${BRANCHES}% < ${THRESHOLD}%" && FAILED=1
+          [ "$FAILED" -eq 0 ] && echo "✅ Coverage thresholds met"
+          exit $FAILED
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-${{ matrix.mfe }}
+          path: ${{ matrix.mfe }}/coverage/
+          retention-days: 7
+
+  # ─── 3. Production Build ─────────────────────────────────────────────────────
+  build:
+    name: Build – ${{ matrix.mfe }}
+    runs-on: ubuntu-latest
+    needs: test
+    strategy:
+      fail-fast: false
+      matrix:
+        mfe: [mfe-explore, mfe-checkout, mfe-decide]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: ${{ matrix.mfe }}/package-lock.json
+
+      - name: Install dependencies
+        working-directory: ${{ matrix.mfe }}
+        run: npm ci
+
+      - name: Build – production
+        working-directory: ${{ matrix.mfe }}
+        run: npm run build -- --configuration production
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-${{ matrix.mfe }}
+          path: ${{ matrix.mfe }}/dist/
+          retention-days: 1
+
+  # ─── 4. Build & Push Docker Images ──────────────────────────────────────────
+  dockerize:
+    name: Dockerize – ${{ matrix.mfe }}
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        mfe: [mfe-explore, mfe-checkout, mfe-decide]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: dist-${{ matrix.mfe }}
+          path: ${{ matrix.mfe }}/dist/
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-${{ matrix.mfe }}
+          tags: |
+            type=ref,event=branch
+            type=sha,prefix=sha-
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+
+      - name: Build & push ${{ matrix.mfe }}
+        uses: docker/build-push-action@v5
+        with:
+          context: ./${{ matrix.mfe }}
+          file: ./${{ matrix.mfe }}/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=${{ matrix.mfe }}
+          cache-to: type=gha,scope=${{ matrix.mfe }},mode=max
+
+  # ─── 5. Deploy ───────────────────────────────────────────────────────────────
+  deploy:
+    name: Deploy – ${{ github.ref == 'refs/heads/main' && 'Production' || 'Staging' }}
+    runs-on: ubuntu-latest
+    needs: dockerize
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
+    environment:
+      name: ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
+      url: ${{ vars.DEPLOY_URL }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_KEY }}
+          script: |
+            set -e
+            cd /opt/tractor-store/frontend
+
+            echo "${{ secrets.GITHUB_TOKEN }}" | \
+              docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+            export IMAGE_TAG=${{ github.sha }}
+            export REGISTRY=${{ env.REGISTRY }}
+            export IMAGE_PREFIX=${{ env.IMAGE_PREFIX }}
+
+            docker compose pull
+            docker compose up -d --remove-orphans
+            docker system prune -f
+
+            echo "✅ Deployment complete – ${{ github.sha }}"
