@@ -1,0 +1,41 @@
+@if (store.loading()) {
+  <div class="loading-banner">
+    <p>Cargando...</p>
+  </div>
+} @else if (store.error()) {
+  <div class="error-banner">
+    <p>{{ store.error() }}</p>
+    <button (click)="store.clearError()">Reintentar</button>
+  </div>
+} @else if (store.homeData()) {
+  <section class="hero">
+    <h1>{{ store.homeData()!.bannerTitle }}</h1>
+    <p>{{ store.homeData()!.bannerSubtitle }}</p>
+  </section>
+
+  <section class="categories">
+    <h2>Categorías</h2>
+    <div class="categories-grid">
+      @for (cat of store.homeData()!.featuredCategories; track cat.id) {
+        <a [routerLink]="['/category', cat.filter]" class="category-card">
+          <img [src]="cat.imageUrl" [alt]="cat.name" />
+          <h3>{{ cat.name }}</h3>
+          <p>{{ cat.description }}</p>
+        </a>
+      }
+    </div>
+  </section>
+
+  <section class="featured-products">
+    <h2>Tractores Destacados</h2>
+    <div class="products-grid">
+      @for (product of store.homeData()!.featuredProducts; track product.id) {
+        <div class="product-card">
+          <img [src]="product.imageUrl" [alt]="product.name" />
+          <h3>{{ product.name }}</h3>
+          <p class="price">{{ product.price | currency: 'USD' }}</p>
+        </div>
+      }
+    </div>
+  </section>
+}

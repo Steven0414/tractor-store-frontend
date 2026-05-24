@@ -1,0 +1,236 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+  color: #1a1a1a;
+  background: #f5f5f5;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.main-content {
+  flex: 1;
+  padding: 1.5rem;
+  max-width: 1200px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+/* Header */
+.site-header {
+  background: #1a3a1a;
+  color: #fff;
+  padding: 0.75rem 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2rem;
+
+  .logo {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #fff;
+  }
+
+  .header-nav {
+    display: flex;
+    gap: 1.5rem;
+
+    a {
+      color: rgba(255,255,255,0.8);
+      font-size: 0.95rem;
+      padding: 0.25rem 0;
+      border-bottom: 2px solid transparent;
+      transition: color 0.2s, border-color 0.2s;
+
+      &:hover, &.active {
+        color: #fff;
+        border-bottom-color: #8bc34a;
+      }
+    }
+  }
+}
+
+/* Footer */
+.site-footer {
+  background: #1a3a1a;
+  color: rgba(255,255,255,0.7);
+  padding: 1rem 1.5rem;
+
+  .footer-content {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  .footer-nav {
+    display: flex;
+    gap: 1.5rem;
+
+    a {
+      font-size: 0.875rem;
+      color: rgba(255,255,255,0.7);
+
+      &:hover { color: #fff; }
+    }
+  }
+}
+
+/* Hero */
+.hero {
+  background: linear-gradient(135deg, #1a3a1a 0%, #2d5a27 100%);
+  color: #fff;
+  padding: 4rem 2rem;
+  border-radius: 12px;
+  margin-bottom: 2rem;
+  text-align: center;
+
+  h1 { font-size: 2.5rem; margin-bottom: 1rem; }
+  p { font-size: 1.125rem; opacity: 0.85; }
+}
+
+/* Grids */
+.categories-grid,
+.products-grid,
+.stores-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 1.25rem;
+}
+
+/* Cards */
+.category-card,
+.product-card,
+.store-card {
+  background: #fff;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  transition: transform 0.2s, box-shadow 0.2s;
+  padding: 1.25rem;
+
+  &:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.12);
+  }
+
+  img {
+    width: 100%;
+    height: 180px;
+    object-fit: cover;
+    border-radius: 6px;
+    margin-bottom: 0.75rem;
+    background: #e8f5e9;
+  }
+
+  h3 { font-size: 1rem; margin-bottom: 0.5rem; }
+  p { font-size: 0.875rem; color: #555; }
+  .price { font-size: 1.1rem; font-weight: 700; color: #1a3a1a; margin-top: 0.5rem; }
+  .sku, .motor, .color { font-size: 0.8rem; color: #777; }
+}
+
+/* Sections */
+.categories, .featured-products {
+  margin-bottom: 2.5rem;
+
+  h2 { font-size: 1.5rem; margin-bottom: 1rem; color: #1a3a1a; }
+}
+
+/* Filter bar */
+.filter-bar {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.5rem;
+}
+
+.filter-btn {
+  padding: 0.5rem 1.25rem;
+  border-radius: 2rem;
+  border: 2px solid #2d5a27;
+  background: transparent;
+  color: #2d5a27;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+
+  &.active, &:hover {
+    background: #2d5a27;
+    color: #fff;
+  }
+}
+
+/* Stores page */
+.stores-header {
+  margin-bottom: 1.5rem;
+
+  h1 { font-size: 1.75rem; margin-bottom: 1rem; color: #1a3a1a; }
+}
+
+.store-search {
+  width: 100%;
+  max-width: 400px;
+  padding: 0.6rem 1rem;
+  border: 2px solid #ddd;
+  border-radius: 2rem;
+  font-size: 0.95rem;
+  outline: none;
+
+  &:focus { border-color: #2d5a27; }
+}
+
+.store-card {
+  .city { font-weight: 600; color: #333; }
+  .phone a, .email a {
+    color: #2d5a27;
+    &:hover { text-decoration: underline; }
+  }
+  .hours { font-size: 0.8rem; color: #888; margin-top: 0.5rem; }
+}
+
+/* Shared states */
+.loading-banner, .error-banner {
+  text-align: center;
+  padding: 3rem;
+  color: #555;
+}
+
+.error-banner {
+  color: #c0392b;
+  button {
+    margin-top: 1rem;
+    padding: 0.5rem 1.5rem;
+    background: #c0392b;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+}
+
+.empty-message {
+  grid-column: 1/-1;
+  text-align: center;
+  padding: 3rem;
+  color: #777;
+}
+
+/* Category page */
+.category-header {
+  margin-bottom: 1.5rem;
+  h1 { font-size: 1.75rem; margin-bottom: 1rem; color: #1a3a1a; }
+}

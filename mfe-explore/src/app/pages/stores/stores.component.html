@@ -1,0 +1,42 @@
+<section class="stores-page">
+  <header class="stores-header">
+    <h1>Nuestras Sucursales</h1>
+    <input
+      type="search"
+      placeholder="Buscar por nombre o ciudad..."
+      class="store-search"
+      [value]="searchQuery()"
+      (input)="onSearch($event)"
+    />
+  </header>
+
+  @if (store.loading()) {
+    <div class="loading-banner">
+      <p>Cargando sucursales...</p>
+    </div>
+  } @else if (store.error()) {
+    <div class="error-banner">
+      <p>{{ store.error() }}</p>
+      <button (click)="store.clearError()">Reintentar</button>
+    </div>
+  } @else {
+    <div class="stores-grid">
+      @for (branch of filteredStores(); track branch.id) {
+        <article class="store-card">
+          <h3>{{ branch.name }}</h3>
+          <p class="address">{{ branch.address }}</p>
+          <p class="city">{{ branch.city }}</p>
+          <p class="phone">
+            <a [href]="'tel:' + branch.phone">{{ branch.phone }}</a>
+          </p>
+          <p class="email">
+            <a [href]="'mailto:' + branch.email">{{ branch.email }}</a>
+          </p>
+          <p class="hours">{{ branch.openingHours }}</p>
+        </article>
+      } @empty {
+        <p class="empty-message">No se encontraron sucursales para "{{ searchQuery() }}".</p>
+      }
+    </div>
+  }
+</section>

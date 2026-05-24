@@ -1,0 +1,45 @@
+<section class="category-page">
+  <header class="category-header">
+    <h1>Catálogo de Tractores</h1>
+
+    <div class="filter-bar">
+      @for (f of filters; track f) {
+        <button
+          class="filter-btn"
+          [class.active]="store.activeFilter() === f"
+          (click)="applyFilter(f)"
+        >
+          {{ f | titlecase }}
+        </button>
+      }
+    </div>
+  </header>
+
+  @if (store.loading()) {
+    <div class="loading-banner">
+      <p>Cargando productos...</p>
+    </div>
+  } @else if (store.error()) {
+    <div class="error-banner">
+      <p>{{ store.error() }}</p>
+      <button (click)="store.clearError()">Reintentar</button>
+    </div>
+  } @else {
+    <div class="products-grid">
+      @for (product of store.filteredProducts(); track product.id) {
+        <article class="product-card">
+          <img [src]="product.imageUrl" [alt]="product.name" />
+          <div class="product-info">
+            <h3>{{ product.name }}</h3>
+            <p class="sku">SKU: {{ product.sku }}</p>
+            <p class="motor">Motor: {{ product.motor }}</p>
+            <p class="color">Color: {{ product.color }}</p>
+            <p class="price">{{ product.price | currency: 'USD' }}</p>
+          </div>
+        </article>
+      } @empty {
+        <p class="empty-message">No se encontraron productos para este filtro.</p>
+      }
+    </div>
+  }
+</section>
