@@ -1,0 +1,12 @@
+<div class="mini-cart">
+  <span class="mini-cart-icon">🛒</span>
+
+  @if (store.loading()) {
+    <span class="mini-cart-badge mini-cart-badge--loading">…</span>
+  } @else if (store.itemCount() > 0) {
+    <span class="mini-cart-badge">{{ store.itemCount() }}</span>
+    <span class="mini-cart-total">{{ store.total() | currency: 'USD' }}</span>
+  } @else {
+    <span class="mini-cart-empty">Vacío</span>
+  }
+</div>

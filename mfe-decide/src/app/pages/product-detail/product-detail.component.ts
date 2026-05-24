@@ -10,6 +10,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { CurrencyPipe, TitleCasePipe } from '@angular/common';
 import { ProductStore } from '../../store/product.store';
 import { InventoryStore } from '../../inventory/store/inventory.store';
+import { CartService } from '../../cart/services/cart.service';
 
 @Component({
   selector: 'app-product-detail',
@@ -23,6 +24,7 @@ import { InventoryStore } from '../../inventory/store/inventory.store';
 export class ProductDetailComponent implements OnInit {
   readonly store = inject(ProductStore);
   readonly inventoryStore = inject(InventoryStore);
+  private readonly cartService = inject(CartService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
 
@@ -50,6 +52,25 @@ export class ProductDetailComponent implements OnInit {
       queryParams: { sku: this.encodeSku(sku) },
       queryParamsHandling: 'merge',
     });
+  }
+
+  onAddToCart(): void {
+    const variant = this.store.selectedVariant();
+    const product = this.store.product();
+    if (!variant || !product) return;
+
+    this.cartService
+      .addItem({
+        sku: variant.sku,
+        name: `${product.name} – ${variant.color} / ${variant.motor}`,
+        quantity: 1,
+        price: variant.price,
+      })
+      .subscribe({
+        next: () =>
+          document.dispatchEvent(new CustomEvent('checkout:cart-updated')),
+        error: (err: Error) => console.error('Error adding to cart:', err.message),
+      });
   }
 
   /** Encodes the SKU for safe inclusion in a query param */

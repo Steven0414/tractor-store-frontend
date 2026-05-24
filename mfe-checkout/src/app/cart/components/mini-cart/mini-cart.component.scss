@@ -1,0 +1,36 @@
+.mini-cart {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+
+.mini-cart-icon {
+  font-size: 1.25rem;
+}
+
+.mini-cart-badge {
+  background: #e74c3c;
+  color: #fff;
+  border-radius: 999px;
+  padding: 0.1rem 0.5rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  min-width: 1.4rem;
+  text-align: center;
+
+  &--loading {
+    background: #aaa;
+  }
+}
+
+.mini-cart-total {
+  font-weight: 600;
+  color: #2c3e50;
+}
+
+.mini-cart-empty {
+  color: #888;
+  font-size: 0.85rem;
+}

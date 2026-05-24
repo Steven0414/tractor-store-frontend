@@ -2,16 +2,37 @@
 	"$schema": "./node_modules/@angular/cli/lib/config/schema.json",
 	"version": 1,
 	"cli": {
-		"packageManager": "npm",
-		"analytics": false
+		"packageManager": "npm"
 	},
 	"newProjectRoot": "projects",
 	"projects": {
-		"mfe-explore": {
+		"mfe-checkout": {
 			"projectType": "application",
 			"schematics": {
 				"@schematics/angular:component": {
-					"style": "scss"
+					"style": "scss",
+					"skipTests": true
+				},
+				"@schematics/angular:class": {
+					"skipTests": true
+				},
+				"@schematics/angular:directive": {
+					"skipTests": true
+				},
+				"@schematics/angular:guard": {
+					"skipTests": true
+				},
+				"@schematics/angular:interceptor": {
+					"skipTests": true
+				},
+				"@schematics/angular:pipe": {
+					"skipTests": true
+				},
+				"@schematics/angular:resolver": {
+					"skipTests": true
+				},
+				"@schematics/angular:service": {
+					"skipTests": true
 				}
 			},
 			"root": "",
@@ -23,10 +44,10 @@
 					"options": {},
 					"configurations": {
 						"production": {
-							"target": "mfe-explore:esbuild:production"
+							"target": "mfe-checkout:esbuild:production"
 						},
 						"development": {
-							"target": "mfe-explore:esbuild:development",
+							"target": "mfe-checkout:esbuild:development",
 							"dev": true
 						}
 					},
@@ -35,9 +56,10 @@
 				"serve": {
 					"builder": "@angular-architects/native-federation:build",
 					"options": {
-						"target": "mfe-explore:serve-original:development",
-						"rebuildDelay": 0,
+						"target": "mfe-checkout:serve-original:development",
+						"rebuildDelay": 500,
 						"dev": true,
+						"cacheExternalArtifacts": false,
 						"port": 0
 					}
 				},
@@ -66,9 +88,9 @@
 					}
 				},
 				"esbuild": {
-					"builder": "@angular-devkit/build-angular:application",
+					"builder": "@angular/build:application",
 					"options": {
-						"outputPath": "dist/mfe-explore",
+						"outputPath": "dist/mfe-checkout",
 						"index": "src/index.html",
 						"browser": "src/main.ts",
 						"polyfills": [
@@ -116,15 +138,15 @@
 					"builder": "@angular-devkit/build-angular:dev-server",
 					"configurations": {
 						"production": {
-							"buildTarget": "mfe-explore:esbuild:production"
+							"buildTarget": "mfe-checkout:esbuild:production"
 						},
 						"development": {
-							"buildTarget": "mfe-explore:esbuild:development"
+							"buildTarget": "mfe-checkout:esbuild:development"
 						}
 					},
 					"defaultConfiguration": "development",
 					"options": {
-						"port": 4201
+						"port": 4202
 					}
 				}
 			}
