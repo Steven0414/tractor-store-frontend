@@ -3,11 +3,13 @@ import {
   Component,
   CUSTOM_ELEMENTS_SCHEMA,
   OnInit,
+  effect,
   inject,
 } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { CurrencyPipe, TitleCasePipe } from '@angular/common';
 import { ProductStore } from '../../store/product.store';
+import { InventoryStore } from '../../inventory/store/inventory.store';
 
 @Component({
   selector: 'app-product-detail',
@@ -20,8 +22,19 @@ import { ProductStore } from '../../store/product.store';
 })
 export class ProductDetailComponent implements OnInit {
   readonly store = inject(ProductStore);
+  readonly inventoryStore = inject(InventoryStore);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+
+  constructor() {
+    // Re-check inventory whenever the selected SKU changes (handles initial auto-select too)
+    effect(() => {
+      const sku = this.store.selectedSku();
+      if (sku) {
+        this.inventoryStore.checkInventory(sku);
+      }
+    });
+  }
 
   ngOnInit(): void {
     const id = this.route.snapshot.paramMap.get('id') ?? '';
@@ -31,6 +44,7 @@ export class ProductDetailComponent implements OnInit {
 
   onVariantSelect(sku: string): void {
     this.store.selectVariant(sku);
+    this.inventoryStore.checkInventory(sku);
     this.router.navigate([], {
       relativeTo: this.route,
       queryParams: { sku: this.encodeSku(sku) },

@@ -26,14 +26,27 @@
         <p class="product-sku">SKU: <strong>{{ store.selectedVariant()?.sku }}</strong></p>
         <p class="product-motor">Motor: <strong>{{ store.selectedVariant()?.motor }}</strong></p>
         <p class="product-color">Color: <strong>{{ store.selectedVariant()?.color }}</strong></p>
-        <p class="product-stock">
-          Stock:
-          <strong [class.out-of-stock]="(store.selectedVariant()?.stock ?? 0) === 0">
-            {{ (store.selectedVariant()?.stock ?? 0) > 0 ? store.selectedVariant()!.stock + ' unidades' : 'Sin stock' }}
-          </strong>
-        </p>
         <p class="product-price">{{ store.selectedVariant()?.price | currency: 'USD' }}</p>
       </div>
+
+      <div class="inventory-status">
+        @if (inventoryStore.loading()) {
+          <span class="badge badge-loading">Verificando disponibilidad...</span>
+        } @else if (inventoryStore.error()) {
+          <span class="badge badge-error">No se pudo verificar el inventario</span>
+        } @else if (inventoryStore.available()) {
+          <span class="badge badge-available">En stock — {{ inventoryStore.quantity() }} unidades</span>
+        } @else {
+          <span class="badge badge-unavailable">Sin stock</span>
+        }
+      </div>
+
+      <button
+        class="btn-buy"
+        [disabled]="inventoryStore.loading() || !inventoryStore.available()"
+      >
+        Comprar ahora
+      </button>
 
       <div class="variant-selector">
         <h2>Selecciona una variante</h2>
