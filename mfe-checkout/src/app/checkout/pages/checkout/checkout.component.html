@@ -1,0 +1,117 @@
+<div class="checkout-page">
+
+  <!-- ── Success view ── -->
+  @if (orderStore.confirmed()) {
+    <div class="checkout-success">
+      <h2>✅ ¡Pedido confirmado!</h2>
+      <p>Tu número de orden es: <strong>{{ orderStore.orderId() }}</strong></p>
+      <p>Total: <strong>{{ orderStore.total() | currency: 'USD' }}</strong></p>
+      <p>Recibirás un correo de confirmación en breve.</p>
+    </div>
+
+  } @else {
+    <h1 class="checkout-title">Finalizar Compra</h1>
+
+    <!-- Cart summary -->
+    @if (cart) {
+      <section class="checkout-summary">
+        <h2>Resumen del carrito</h2>
+        <ul>
+          @for (item of cart.items; track item.sku) {
+            <li>
+              <span>{{ item.name }}</span>
+              <span>{{ item.quantity }} × {{ item.price | currency: 'USD' }}</span>
+              <span>= {{ item.subtotal | currency: 'USD' }}</span>
+            </li>
+          }
+        </ul>
+        <p class="checkout-summary__total">Total: <strong>{{ cart.total | currency: 'USD' }}</strong></p>
+      </section>
+    }
+
+    <!-- Error banner -->
+    @if (orderStore.error(); as err) {
+      <div class="checkout-error">
+        <strong>{{ err.title }}</strong>
+        <p>{{ err.detail }}</p>
+      </div>
+    }
+
+    <!-- Checkout form -->
+    <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate class="checkout-form">
+
+      <fieldset>
+        <legend>Datos personales</legend>
+
+        <div class="form-field">
+          <label for="firstName">Nombre *</label>
+          <input id="firstName" formControlName="firstName" type="text" />
+          @if (fieldError('firstName'); as msg) { <span class="field-error">{{ msg }}</span> }
+        </div>
+
+        <div class="form-field">
+          <label for="lastName">Apellido *</label>
+          <input id="lastName" formControlName="lastName" type="text" />
+          @if (fieldError('lastName'); as msg) { <span class="field-error">{{ msg }}</span> }
+        </div>
+
+        <div class="form-field">
+          <label for="email">Correo electrónico *</label>
+          <input id="email" formControlName="email" type="email" />
+          @if (fieldError('email'); as msg) { <span class="field-error">{{ msg }}</span> }
+        </div>
+
+        <div class="form-field">
+          <label for="phone">Teléfono *</label>
+          <input id="phone" formControlName="phone" type="tel" />
+          @if (fieldError('phone'); as msg) { <span class="field-error">{{ msg }}</span> }
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Dirección de envío</legend>
+
+        <div class="form-field">
+          <label for="address">Dirección *</label>
+          <input id="address" formControlName="address" type="text" />
+          @if (fieldError('address'); as msg) { <span class="field-error">{{ msg }}</span> }
+        </div>
+
+        <div class="form-field">
+          <label for="city">Ciudad *</label>
+          <input id="city" formControlName="city" type="text" />
+          @if (fieldError('city'); as msg) { <span class="field-error">{{ msg }}</span> }
+        </div>
+
+        <div class="form-field">
+          <label for="postalCode">Código postal *</label>
+          <input id="postalCode" formControlName="postalCode" type="text" />
+          @if (fieldError('postalCode'); as msg) { <span class="field-error">{{ msg }}</span> }
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Método de pago</legend>
+
+        <div class="form-field">
+          <label for="paymentMethod">Pago *</label>
+          <select id="paymentMethod" formControlName="paymentMethod">
+            <option value="credit_card">Tarjeta de crédito</option>
+            <option value="debit_card">Tarjeta de débito</option>
+            <option value="cash">Contra entrega</option>
+          </select>
+          @if (fieldError('paymentMethod'); as msg) { <span class="field-error">{{ msg }}</span> }
+        </div>
+      </fieldset>
+
+      <button
+        type="submit"
+        class="btn-submit"
+        [disabled]="form.invalid || orderStore.loading() || !cart?.items?.length">
+        @if (orderStore.loading()) { Procesando… } @else { Confirmar pedido }
+      </button>
+
+    </form>
+  }
+
+</div>

@@ -3,10 +3,9 @@ const { withNativeFederation, shareAll } = require('@angular-architects/native-f
 module.exports = withNativeFederation({
   name: 'mfe-checkout',
 
-
-
   exposes: {
     './MiniCart': './src/app/cart/components/mini-cart/mini-cart.component.ts',
+    './CheckoutPage': './src/app/checkout/pages/checkout/checkout.component.ts',
   },
 
   shared: {
@@ -18,16 +17,9 @@ module.exports = withNativeFederation({
     'rxjs/fetch',
     'rxjs/testing',
     'rxjs/webSocket',
-    // Add further packages you don't need at runtime
   ],
 
-  // Please read our FAQ about sharing libs:
-  // https://shorturl.at/jmzH0
-
   features: {
-    // New feature for more performance and avoiding
-    // issues with node libs. Comment this out to
-    // get the traditional behavior:
     ignoreUnusedDeps: true
   }
 });
