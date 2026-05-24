@@ -30,7 +30,7 @@ export class HeaderComponent implements OnInit {
   private async _loadMiniCart(): Promise<void> {
     try {
       const m = await loadRemoteModule('mfe-checkout', './MiniCart');
-      const cmp = m.MiniCartComponent as Type<unknown>;
+      const cmp = (m as Record<string, Type<unknown>>)['MiniCartComponent'];
       this.vcr.createComponent(cmp, { environmentInjector: this.injector });
     } catch (err) {
       console.warn('[Header] MiniCart remote not available:', err);

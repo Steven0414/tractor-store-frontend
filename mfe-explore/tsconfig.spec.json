@@ -4,9 +4,15 @@
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "outDir": "./out-tsc/spec",
+    "baseUrl": ".",
     "types": [
       "jasmine"
-    ]
+    ],
+    "paths": {
+      "@angular-architects/native-federation": [
+        "src/testing/native-federation.mock.ts"
+      ]
+    }
   },
   "include": [
     "src/**/*.spec.ts",
