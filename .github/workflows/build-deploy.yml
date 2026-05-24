@@ -8,7 +8,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_PREFIX: ${{ github.repository_owner }}/tractor-store | tr '[:upper:]' '[:lower:]'
+  IMAGE_PREFIX: tractor-store
   NODE_VERSION: '22'
 
 jobs:
@@ -162,6 +162,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Compute image prefix (lowercase)
+        id: image
+        run: |
+          OWNER_LC="$(echo "${GITHUB_REPOSITORY_OWNER}" | tr '[:upper:]' '[:lower:]')"
+          echo "prefix=${OWNER_LC}/${{ env.IMAGE_PREFIX }}" >> "$GITHUB_OUTPUT"
+
       - name: Download build artifacts
         uses: actions/download-artifact@v4
         with:
@@ -182,7 +188,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-${{ matrix.mfe }}
+          images: ${{ env.REGISTRY }}/${{ steps.image.outputs.prefix }}-${{ matrix.mfe }}
           tags: |
             type=ref,event=branch
             type=sha,prefix=sha-
@@ -212,6 +218,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Compute image prefix (lowercase)
+        id: image
+        run: |
+          OWNER_LC="$(echo "${GITHUB_REPOSITORY_OWNER}" | tr '[:upper:]' '[:lower:]')"
+          echo "prefix=${OWNER_LC}/${{ env.IMAGE_PREFIX }}" >> "$GITHUB_OUTPUT"
+
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -227,7 +239,7 @@ jobs:
 
             export IMAGE_TAG=${{ github.sha }}
             export REGISTRY=${{ env.REGISTRY }}
-            export IMAGE_PREFIX=${{ env.IMAGE_PREFIX }}
+            export IMAGE_PREFIX=${{ steps.image.outputs.prefix }}
 
             docker compose pull
             docker compose up -d --remove-orphans
